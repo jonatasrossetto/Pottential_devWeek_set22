@@ -38,21 +38,45 @@ public class PersonController : ControllerBase
     }
 
     [HttpPost]
-    public Person Post(Person pessoa)
+    public ActionResult<Person> Post(Person pessoa)
     {
         _context.Pessoas.Add(pessoa);
         _context.SaveChanges();
 
-        return pessoa;
+        return Created("registro criado com sucesso", pessoa);
     }
     [HttpPut("{id}")]
-    public string Update([FromRoute] int id, [FromBody] Person pessoa)
+    public ActionResult<Object> Update([FromRoute] int id, [FromBody] Person pessoa)
     {
-        _context.Pessoas.Update(pessoa);
-        _context.SaveChanges();
-        Console.WriteLine("id: " + id);
-        Console.WriteLine(pessoa);
-        return "Dados do id: " + id + " atualizados.";
+        var result = _context.Pessoas.SingleOrDefault(e => e.Id == id);
+        if (result is null)
+        {
+            return NotFound(new
+            {
+                msg = "id: " + id + " não encontrado",
+                status = HttpStatusCode.NotFound
+            });
+        }
+        try
+        {
+            _context.Pessoas.Update(pessoa);
+            _context.SaveChanges();
+        }
+        catch
+        {
+            return BadRequest(new
+            {
+                msg = "Erro ao tentar atualizar os dados do id: " + id,
+                status = HttpStatusCode.BadRequest
+            });
+        }
+
+
+        return Ok(new
+        {
+            msg = "Dados do id: " + id + " atualizados.",
+            status = HttpStatusCode.OK
+        });
     }
     // [HttpDelete("{id}")]
     // public string Delete([FromRoute] int id)
@@ -79,6 +103,5 @@ public class PersonController : ControllerBase
             status = HttpStatusCode.OK
         });
     }
-
 
 }
