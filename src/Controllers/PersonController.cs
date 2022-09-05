@@ -1,7 +1,9 @@
 // usar o dotnet watch run para hotreload do projeto
 
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 using src.Models;
 using src.Persistence;
 
@@ -22,14 +24,19 @@ public class PersonController : ControllerBase
 
 
     [HttpGet]
-    public List<Person> Get()
+    public ActionResult<List<Person>> Get()
     {
         // Person pessoa = new Person("Jônatas", 48);
         // Contrato contrato = new Contrato(13, "12345");
         // pessoa.Contratos.Add(contrato);
-
-        return _context.Pessoas.Include(p => p.Contratos).ToList();
+        var result = _context.Pessoas.Include(p => p.Contratos).ToList();
+        if (!result.Any())
+        {
+            return NoContent();
+        }
+        return Ok(result);
     }
+
     [HttpPost]
     public Person Post(Person pessoa)
     {
@@ -47,13 +54,31 @@ public class PersonController : ControllerBase
         Console.WriteLine(pessoa);
         return "Dados do id: " + id + " atualizados.";
     }
+    // [HttpDelete("{id}")]
+    // public string Delete([FromRoute] int id)
+    // {
+    //     var result = _context.Pessoas.SingleOrDefault(e => e.Id == id);
+    //     _context.Pessoas.Remove(result);
+    //     _context.SaveChanges();
+    //     Console.WriteLine(result.Nome);
+    //     return "O id " + id + " foi apagado com sucesso.";
+    // }
+
     [HttpDelete("{id}")]
-    public string Delete([FromRoute] int id)
+    public ActionResult<Object> Delete([FromRoute] int id)
     {
         var result = _context.Pessoas.SingleOrDefault(e => e.Id == id);
-        _context.Pessoas.Remove(result);
-        _context.SaveChanges();
-        Console.WriteLine(result.Nome);
-        return "O id " + id + " foi apagado com sucesso.";
+        if (result is null) return BadRequest(new
+        {
+            msg = "O Id solicitado não existe na base de dados",
+            status = HttpStatusCode.BadRequest
+        });
+        return Ok(new
+        {
+            msg = "O id " + id + " foi apagado com sucesso.",
+            status = HttpStatusCode.OK
+        });
     }
+
+
 }
